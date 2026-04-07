@@ -1,0 +1,14 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "Dataverse:BaseUrl": "https://org.crm4.dynamics.com/",
+    "Dataverse:Scope": "https://org.crm4.dynamics.com/.default",
+    "Dataverse:TenantId": "00000000-0000-0000-0000-000000000000",
+    "Dataverse:UserA:ClientId": "00000000-0000-0000-0000-000000000000",
+    "Dataverse:UserA:ClientSecret": "",
+    "Dataverse:UserB:ClientId": "00000000-0000-0000-0000-000000000000",
+    "Dataverse:UserB:ClientSecret": ""
+  }
+}

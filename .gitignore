@@ -1,0 +1,13 @@
+bin/
+obj/
+.idea/
+.vs/
+.vscode/
+*.user
+*.suo
+
+# user secrets
+secrets.json
+
+# Azure Functions
+local.settings.json

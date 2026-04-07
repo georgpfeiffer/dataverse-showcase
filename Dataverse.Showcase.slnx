@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/.common/">
+    <File Path=".gitignore" />
+    <File Path="Directory.Build.props" />
+    <File Path="global.json" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Dataverse.Showcase.Http/Dataverse.Showcase.Http.csproj" />
+    <Project Path="src/Dataverse.Showcase.FunctionApp/Dataverse.Showcase.FunctionApp.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Dataverse.Showcase.Http.Tests/Dataverse.Showcase.Http.Tests.csproj" />
+  </Folder>
+</Solution>

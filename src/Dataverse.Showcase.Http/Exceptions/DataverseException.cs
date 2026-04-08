@@ -1,7 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Dataverse.Showcase.Http.TypedHttpClients;
 
 namespace Dataverse.Showcase.Http.Exceptions;
 
@@ -50,7 +49,7 @@ public class DataverseException : Exception
     {
         try
         {
-            var envelope = await response.Content.ReadFromJsonAsync<DataverseErrorEnvelope>(DataverseClientBase.JsonOptions,
+            var envelope = await response.Content.ReadFromJsonAsync<DataverseErrorEnvelope>(DataverseApiClient.JsonOptions,
                 cancellationToken);
             if (envelope?.Error is { } error)
             {

@@ -3,6 +3,7 @@ using Dataverse.Showcase.FunctionApp;
 using Dataverse.Showcase.Http;
 using Dataverse.Showcase.Http.UserManagement;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 var host = new HostBuilder()
@@ -23,13 +24,14 @@ var host = new HostBuilder()
             configuration["Dataverse:UserB:ClientId"],
             configuration["Dataverse:UserB:ClientSecret"]));
 
-        // multi-user rotation with 429 handling + span tagging
-        services.AddDataverseHttpClient<SampleDataverseClient>(baseUrl, scope, userA, userB);
+        // multi-user rotation with 429 handling
+        services.AddDataverseApiClient(baseUrl, scope, userA, userB);
+        services.AddTransient<AccountsClient>();
 
         // single-user alternative:
-        // services.AddDataverseHttpClient<SampleDataverseClient>(baseUrl, tenantId, 
-        //     configuration["Dataverse:ClientId"]!, 
-        //     configuration["Dataverse:ClientSecret"]!, 
+        // services.AddDataverseApiClient(baseUrl, tenantId,
+        //     configuration["Dataverse:ClientId"]!,
+        //     configuration["Dataverse:ClientSecret"]!,
         //     scope);
     })
     .Build();

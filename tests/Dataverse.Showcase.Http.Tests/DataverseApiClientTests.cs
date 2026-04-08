@@ -1,19 +1,19 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
+using Dataverse.Showcase.Http;
 using Dataverse.Showcase.Http.Exceptions;
-using Dataverse.Showcase.Http.TypedHttpClients;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 
 namespace Dataverse.Showcase.Http.Tests;
 
 [TestFixture]
-public class DataverseClientBaseTests
+public class DataverseApiClientTests
 {
     private MockHttpMessageHandler _handler = null!;
     private HttpClient _httpClient = null!;
-    private TestDataverseClient _client = null!;
+    private DataverseApiClient _client = null!;
 
     [SetUp]
     public void Setup()
@@ -23,7 +23,7 @@ public class DataverseClientBaseTests
         {
             BaseAddress = new Uri("https://contoso.crm4.dynamics.com/"),
         };
-        _client = new TestDataverseClient(_httpClient, Substitute.For<ILogger>());
+        _client = new DataverseApiClient(_httpClient, Substitute.For<ILogger<DataverseApiClient>>());
     }
 
     [TearDown]
@@ -45,7 +45,7 @@ public class DataverseClientBaseTests
             }
             """);
 
-        var result = await _client.InvokeGetODataAsync<AccountRow>("api/data/v9.2/accounts?$select=name", CancellationToken.None);
+        var result = await _client.GetODataAsync<AccountRow>("api/data/v9.2/accounts?$select=name", CancellationToken.None);
 
         Assert.Multiple(() =>
         {
@@ -60,7 +60,7 @@ public class DataverseClientBaseTests
     {
         EnqueueJson(HttpStatusCode.OK, "{}");
 
-        var result = await _client.InvokeGetODataAsync<AccountRow>("api/data/v9.2/accounts", CancellationToken.None);
+        var result = await _client.GetODataAsync<AccountRow>("api/data/v9.2/accounts", CancellationToken.None);
 
         Assert.That(result, Is.Empty);
     }
@@ -78,7 +78,7 @@ public class DataverseClientBaseTests
             """);
 
         var ex = Assert.ThrowsAsync<DataverseException>(async () =>
-            await _client.InvokeGetODataAsync<AccountRow>("api/data/v9.2/accounts", CancellationToken.None));
+            await _client.GetODataAsync<AccountRow>("api/data/v9.2/accounts", CancellationToken.None));
 
         Assert.Multiple(() =>
         {
@@ -98,7 +98,7 @@ public class DataverseClientBaseTests
         _handler.EnqueueResponse(response);
 
         var ex = Assert.ThrowsAsync<DataverseException>(async () =>
-            await _client.InvokeGetODataAsync<AccountRow>("api/data/v9.2/accounts", CancellationToken.None));
+            await _client.GetODataAsync<AccountRow>("api/data/v9.2/accounts", CancellationToken.None));
 
         Assert.Multiple(() =>
         {
@@ -114,7 +114,7 @@ public class DataverseClientBaseTests
         EnqueueJson(HttpStatusCode.OK, "{ this is not json");
 
         var ex = Assert.ThrowsAsync<DataverseException>(async () =>
-            await _client.InvokeGetODataAsync<AccountRow>("api/data/v9.2/accounts", CancellationToken.None));
+            await _client.GetODataAsync<AccountRow>("api/data/v9.2/accounts", CancellationToken.None));
 
         Assert.Multiple(() =>
         {
@@ -127,7 +127,7 @@ public class DataverseClientBaseTests
     public void GetODataAsyncThrowsOnEmptyQuery()
     {
         Assert.ThrowsAsync<ArgumentException>(async () =>
-            await _client.InvokeGetODataAsync<AccountRow>("   ", CancellationToken.None));
+            await _client.GetODataAsync<AccountRow>("   ", CancellationToken.None));
     }
 
     [Test]
@@ -136,7 +136,7 @@ public class DataverseClientBaseTests
         _handler.EnqueueResponse(HttpStatusCode.NoContent);
 
         using var request = new HttpRequestMessage(HttpMethod.Post, "api/data/v9.2/accounts");
-        using var response = await _client.InvokeSendAsync(request, CancellationToken.None);
+        using var response = await _client.SendAsync(request, CancellationToken.None);
 
         Assert.Multiple(() =>
         {
@@ -157,17 +157,4 @@ public class DataverseClientBaseTests
     }
 
     private sealed record AccountRow(string? Name);
-
-    private sealed class TestDataverseClient : DataverseClientBase
-    {
-        public TestDataverseClient(HttpClient client, ILogger logger) : base(client, logger)
-        {
-        }
-
-        public Task<IReadOnlyList<T>> InvokeGetODataAsync<T>(string query, CancellationToken cancellationToken)
-            => GetODataAsync<T>(query, cancellationToken);
-
-        public Task<HttpResponseMessage> InvokeSendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-            => SendAsync(request, cancellationToken);
-    }
 }

@@ -3,44 +3,37 @@ using System.Text.Json;
 using Dataverse.Showcase.Http.Exceptions;
 using Microsoft.Extensions.Logging;
 
-namespace Dataverse.Showcase.Http.TypedHttpClients;
+namespace Dataverse.Showcase.Http;
 
 /// <summary>
-///     Base class for typed Dataverse / Dynamics 365 HTTP clients. Subclass this
-///     and register your subclass via <c>AddDataverseHttpClient&lt;T&gt;</c>.
-///     Exposes a single <see cref="SendAsync" /> entry point and an OData GET
-///     helper; subclasses should never touch the underlying <see cref="HttpClient" />
-///     directly so that every request flows through the same handler pipeline.
+///     Sealed Dataverse Web API facade. Inject this into your domain classes and
+///     call <see cref="SendAsync" /> or <see cref="GetODataAsync{T}" /> instead of
+///     touching the underlying <see cref="HttpClient" /> directly, so every request
+///     flows through the configured handler pipeline.
 /// </summary>
-public abstract class DataverseClientBase
+public sealed class DataverseApiClient
 {
     internal static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     private readonly HttpClient _client;
+    private readonly ILogger<DataverseApiClient> _logger;
 
     /// <summary>
-    ///     Logger available to subclasses for request-level diagnostics.
+    ///     Creates a new <see cref="DataverseApiClient" /> with the typed
+    ///     <see cref="HttpClient" /> supplied by DI.
     /// </summary>
-    protected ILogger Logger { get; }
-
-    /// <summary>
-    ///     Creates a new <see cref="DataverseClientBase" /> with the supplied typed
-    ///     <see cref="HttpClient" /> and logger.
-    /// </summary>
-    protected DataverseClientBase(HttpClient client, ILogger logger)
+    public DataverseApiClient(HttpClient client, ILogger<DataverseApiClient> logger)
     {
         ArgumentNullException.ThrowIfNull(client);
         ArgumentNullException.ThrowIfNull(logger);
         _client = client;
-        Logger = logger;
+        _logger = logger;
     }
 
     /// <summary>
-    ///     Sends an HTTP request through the configured handler pipeline. This is
-    ///     the single entry point subclasses use for custom requests instead of
-    ///     touching the underlying <see cref="HttpClient" /> directly.
+    ///     Sends an HTTP request through the configured handler pipeline.
     /// </summary>
-    protected Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    public Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
         return _client.SendAsync(request, cancellationToken);
@@ -55,7 +48,7 @@ public abstract class DataverseClientBase
     ///     Thrown when Dataverse returns a non-success status or the response body
     ///     cannot be deserialized into the expected shape.
     /// </exception>
-    protected async Task<IReadOnlyList<T>> GetODataAsync<T>(string query, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<T>> GetODataAsync<T>(string query, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(query);
 
@@ -64,7 +57,7 @@ public abstract class DataverseClientBase
 
         if (!response.IsSuccessStatusCode)
         {
-            Logger.LogWarning("Dataverse OData query {Query} failed with {StatusCode}", query, (int)response.StatusCode);
+            _logger.LogWarning("Dataverse OData query {Query} failed with {StatusCode}", query, (int)response.StatusCode);
             throw await DataverseException.FromResponseAsync(response, cancellationToken);
         }
 

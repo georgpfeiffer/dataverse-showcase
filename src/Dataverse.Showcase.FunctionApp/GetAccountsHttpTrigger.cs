@@ -7,12 +7,12 @@ namespace Dataverse.Showcase.FunctionApp;
 
 public class GetAccountsHttpFunctionTrigger
 {
-    private readonly SampleDataverseClient _client;
+    private readonly AccountsClient _accounts;
     private readonly ILogger<GetAccountsHttpFunctionTrigger> _logger;
 
-    public GetAccountsHttpFunctionTrigger(SampleDataverseClient client, ILogger<GetAccountsHttpFunctionTrigger> logger)
+    public GetAccountsHttpFunctionTrigger(AccountsClient accounts, ILogger<GetAccountsHttpFunctionTrigger> logger)
     {
-        _client = client;
+        _accounts = accounts;
         _logger = logger;
     }
 
@@ -22,7 +22,7 @@ public class GetAccountsHttpFunctionTrigger
     {
         _logger.LogInformation("GetAccounts invoked");
 
-        var accounts = await _client.GetTopAccountsAsync(ct);
+        var accounts = await _accounts.GetTopAsync(ct);
 
         var response = requestData.CreateResponse(HttpStatusCode.OK);
         await response.WriteAsJsonAsync(accounts, ct);

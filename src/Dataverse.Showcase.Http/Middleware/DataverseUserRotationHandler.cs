@@ -34,9 +34,6 @@ public class DataverseUserRotationHandler : DelegatingHandler
             var token = await user.Credential.GetTokenAsync(new TokenRequestContext(_scopes), cancellationToken);
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.Token);
 
-            request.Options.Set(DataverseRequestOptions.UserName, user.Name);
-            request.Options.Set(DataverseRequestOptions.Attempt, attempt + 1);
-
             var response = await base.SendAsync(request, cancellationToken);
             if (response.StatusCode != HttpStatusCode.TooManyRequests)
             {

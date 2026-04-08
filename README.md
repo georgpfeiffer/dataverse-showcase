@@ -5,8 +5,8 @@ A standalone showcase of a Dataverse typed `HttpClient` pipeline with
 larger internal integration library.
 
 The goal is to demonstrate everything you can wire up through
-`AddDataverseHttpClient<T>` in isolation: the handlers, the user rotation
-store, and the activity tagging for observability.
+`AddDataverseHttpClient<T>` in isolation: the handlers and the user rotation
+store.
 
 ## What's inside
 
@@ -15,8 +15,6 @@ store, and the activity tagging for observability.
 - `BearerTokenHandler` — single-user bearer token via any `Azure.Core.TokenCredential`
 - `DataverseUserRotationHandler` — multi-user rotation that locks a throttled
   user on HTTP 429 and retries with the next available one
-- `DataverseActivityTagHandler` + `DataverseRequestOptions` — tag the current
-  `Activity` with `DataverseUserName` / `DataverseUserAttempt`
 - `UserManagement/` — `DataverseUser`, `IDataverseUserManager` /
   `DataverseUserManager` (round-robin with skip-locked), `IDataverseUserStore` /
   `InMemoryDataverseUserStore` (TTL-based lock store)
@@ -52,16 +50,6 @@ Rotates through the provided users. When Dataverse returns HTTP 429, the
 throttled user is locked for the `Retry-After` duration and the request is
 retried with the next available user. If all users are locked, a
 `DataverseThrottledException` is thrown.
-
-## Activity tagging
-
-```csharp
-services.AddDataverseHttpClient<MyDataverseClient>(baseUrl, scope, users)
-    .AddDataverseActivityTagHandler();
-```
-
-Tags each span with `DataverseUserName` and `DataverseUserAttempt`. On 429
-retries each attempt is a separate span showing which user was tried.
 
 ## Running the sample
 

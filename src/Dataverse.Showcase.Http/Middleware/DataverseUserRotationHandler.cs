@@ -27,14 +27,23 @@ public class DataverseUserRotationHandler : DelegatingHandler
     /// <inheritdoc />
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
+        // httpRequestMessage is send-once, so buffer content and clone per attempt
+        byte[]? bufferedContent = null;
+        if (request.Content != null)
+        {
+            bufferedContent = await request.Content.ReadAsByteArrayAsync(cancellationToken);
+        }
+
         for (var attempt = 0; attempt < _userManager.UserCount; attempt++)
         {
             var user = _userManager.GetAvailableUser() ?? throw new DataverseThrottledException("All Dataverse users are rate-limited");
 
             var token = await user.Credential.GetTokenAsync(new TokenRequestContext(_scopes), cancellationToken);
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.Token);
 
-            var response = await base.SendAsync(request, cancellationToken);
+            using var clonedRequest = CloneRequest(request, bufferedContent);
+            clonedRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.Token);
+
+            var response = await base.SendAsync(clonedRequest, cancellationToken);
             if (response.StatusCode != HttpStatusCode.TooManyRequests)
             {
                 return response;
@@ -48,6 +57,38 @@ public class DataverseUserRotationHandler : DelegatingHandler
         }
 
         throw new DataverseThrottledException("All Dataverse users are rate-limited");
+    }
+
+    private static HttpRequestMessage CloneRequest(HttpRequestMessage request, byte[]? bufferedContent)
+    {
+        var clone = new HttpRequestMessage(request.Method, request.RequestUri)
+        {
+            Version = request.Version
+        };
+
+        foreach (var header in request.Headers)
+        {
+            clone.Headers.TryAddWithoutValidation(header.Key, header.Value);
+        }
+
+        foreach (var option in (IDictionary<string, object?>)request.Options)
+        {
+            ((IDictionary<string, object?>)clone.Options)[option.Key] = option.Value;
+        }
+
+        if (bufferedContent != null)
+        {
+            clone.Content = new ByteArrayContent(bufferedContent);
+            if (request.Content != null)
+            {
+                foreach (var header in request.Content.Headers)
+                {
+                    clone.Content.Headers.TryAddWithoutValidation(header.Key, header.Value);
+                }
+            }
+        }
+
+        return clone;
     }
 
     private static TimeSpan ParseRetryAfter(HttpResponseMessage response)

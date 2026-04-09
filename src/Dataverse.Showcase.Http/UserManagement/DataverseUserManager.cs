@@ -7,7 +7,7 @@ public class DataverseUserManager : IDataverseUserManager
 {
     private readonly DataverseUser[] _users;
     private readonly IDataverseUserStore _store;
-    private int _nextIndex;
+    private uint _nextIndex;
 
     public DataverseUserManager(IDataverseUserStore store, params DataverseUser[] users)
     {
@@ -25,10 +25,11 @@ public class DataverseUserManager : IDataverseUserManager
     public DataverseUser? GetAvailableUser()
     {
         var startIndex = Interlocked.Increment(ref _nextIndex);
+        var length = (uint)_users.Length;
 
-        for (var i = 0; i < _users.Length; i++)
+        for (var i = 0u; i < length; i++)
         {
-            var user = _users[(startIndex + i) % _users.Length];
+            var user = _users[(startIndex + i) % length];
             if (_store.IsAvailable(user.Name))
             {
                 return user;
